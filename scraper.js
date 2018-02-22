@@ -16,7 +16,10 @@ function timeout(ms) {
 query = async (browser, key) => {
   const page = await browser.newPage();
   await page.setViewport({width: 2000, height: 1080})
-  await page.goto('http://www.baidu.com/s?wd=' + key);
+  await page.goto('http://www.baidu.com/s?wd=' + key, {
+                  waitUntil: 'networkidle2',
+                  timeout: 60000
+                 });
 
   let content = await page.content();
   let $ = cheerio.load(content, { decodeEntities: false });
@@ -67,12 +70,6 @@ query = async (browser, key) => {
     let newLabel = $(el).attr('title');
     result.push(newLabel);
   });
-
-  let output = key + ":";
-  for (let idx in result){
-    output += result[idx] + ",";
-  }
-  console.log(output)
 
   return result;
 };

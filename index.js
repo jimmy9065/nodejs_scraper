@@ -43,7 +43,9 @@ let crawling = async function(browser){
           }
           data += res[idx] + ",";
         }
-        fsGraph.write(data, 'UTF8');
+        let trimm = data.slice(0, -1) + "/n";
+        console.log(trimm)
+        fsGraph.write(trimm, 'UTF8');
       } 
       catch( error) {
         console.log('spider failed');
