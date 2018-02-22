@@ -12,12 +12,21 @@ let crawling = async function(browser){
   let map = new HashMap();
   if(fs.existsSync('./candidate') && fs.existsSync('./graph')){
     queue = fs.readFileSync('./candidate', "utf-8").split(/\n/);
+    queue.pop();
     console.log('found cadidate');
     console.log(queue);
   }
   else{
     key = '销售易';
-    queue = await scraper.query(browser, key);
+
+    try{
+      queue = await scraper.query(browser, key);
+    }
+    catch(err) {
+      console.log(err);
+      return;
+    }
+
     map.set(key, queue);
   }
 
@@ -35,17 +44,25 @@ let crawling = async function(browser){
     if(!map.has(key)){
       try {
         let res = await scraper.query(browser, key);
-        let data = key + ":";
-        map.set(key, res);
-        for (let idx in res){
-          if(!map.has(res[idx])){
-            queue.push(res[idx]);
-          }
-          data += res[idx] + ",";
+        if(res == undefined){
+          console.log('failed to retrieve: ' + key);
+          queue.unshift(key);
+          console.log('need cool down');
+          await timeout(100000);
         }
-        let trimm = data.slice(0, -1) + "/n";
-        console.log(trimm)
-        fsGraph.write(trimm, 'UTF8');
+        else{
+          let data = key + ":";
+          map.set(key, res);
+          for (let idx in res){
+            if(!map.has(res[idx])){
+              queue.push(res[idx]);
+            }
+            data += res[idx] + ",";
+          }
+          let trimm = data.slice(0, -1) + "\n";
+          console.log(trimm)
+          fsGraph.write(trimm, 'UTF8');
+        }
       } 
       catch( error) {
         console.log('spider failed');
@@ -55,7 +72,7 @@ let crawling = async function(browser){
   }
 
   fsGraph.end();
-  let w_data = new Buffer(queue.join('/n'));
+  let w_data = new Buffer(queue.join('\n'));
   fs.writeFile('./candidate', w_data, {flag: 'a'}, function(err) {
     if(err)
       console.log(err);
