@@ -21,7 +21,6 @@ function timeout(ms) {
 
 query = async (browser, key) => {
   const page = await browser.newPage();
-  await page.setViewport({width: 2000, height: 1080})
   try{
     await page.goto('http://www.baidu.com/s?wd=' + key, {
                     waitUntil: 'networkidle2',
@@ -34,14 +33,25 @@ query = async (browser, key) => {
     return undefined;
   }
 
-  let content = await page.content();
+  let content;
+  try{
+    content = await page.content();
+  }
+  catch(err){
+    console.log('cat not get the content');
+    console.log(err)
+    return undefined;
+  }
+
   let $ = cheerio.load(content, { decodeEntities: false });
   let selector = undefined;
   let preSelector = '#con-ar > div:nth-child(1) > div > div > div:nth-child(';
   let result = [];
 
-  if($('#con-ar') == undefined)
+  if($('#con-ar') == undefined){
+    page.close();
     return [];
+  }
 
   for(i=1; i<=5; i+=2){
     let temp = preSelector + i + ')';
@@ -54,6 +64,7 @@ query = async (browser, key) => {
         $ = cheerio.load(content, { decodeEntities: false });
       }
 
+      //await page.setViewport({width: 2000, height: 1080})
       //await page.pdf({
       //  path: key + '.pdf',
       //  format: 'A4',
@@ -76,6 +87,7 @@ query = async (browser, key) => {
 
   if($(selector) == undefined){
     console.log('empty for ' + key)
+    page.close();
     return [];
   }
   
@@ -84,6 +96,7 @@ query = async (browser, key) => {
     result.push(newLabel);
   });
 
+  page.close();
   return result;
 };
 

@@ -1,6 +1,19 @@
 var fs = require('fs');
 var HashMap = require('hashmap');
+var keypress = require('keypress');
+
 const scraper = require('./scraper.js');
+var running = true;
+
+keypress(process.stdin);
+
+process.stdin.on('keypress', function(ch, key) {
+  if(key && key.name=='enter'){
+    console.log('stop')
+    running = false;
+    process.stdin.pause();
+  }
+})
 
 function timeout(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -37,7 +50,7 @@ let crawling = async function(browser){
 
   let fsGraph = fs.createWriteStream('./graph')
   
-  while(queue.length > 0){
+  while(queue.length > 0 && running){
     await timeout(1000);
     //key = queue.pop();
     key = queue.shift();
@@ -65,22 +78,27 @@ let crawling = async function(browser){
         }
       } 
       catch( error) {
-        console.log('spider failed');
+        console.log('spider failed at key: ' + key);
+        console.log(error);
+        queue.unshift(key);
         break;
       }
     }
   }
 
   fsGraph.end();
-  let w_data = new Buffer(queue.join('\n'));
-  fs.writeFile('./candidate', w_data, {flag: 'a'}, function(err) {
-    if(err)
-      console.log(err);
-    else{
-      console.log('candidate file recorded');
-      scraper.stopBrowser(browser);
-    }
-  })
+
+  if(queue.length > 0){
+    let w_data = new Buffer(queue.join('\n'));
+    fs.writeFile('./candidate', w_data, {flag: 'a'}, function(err) {
+      if(err)
+        console.log(err);
+      else{
+        console.log('candidate file recorded');
+        scraper.stopBrowser(browser);
+      }
+    })
+  }
 };
 
 scraper.startBrowser()
