@@ -1,3 +1,4 @@
-graph
+graph*
+candidate*
 node_modules/*
 package-lock.json
