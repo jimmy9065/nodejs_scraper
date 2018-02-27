@@ -31,16 +31,23 @@ let crawling = async function(browser){
   let queue = [], visited = [];
   let fsGraph
   let map = new HashMap();
-  if(fs.existsSync('./candidate') && fs.existsSync('./graph') && fs.existsSync('./visited')){
+  if(fs.existsSync('./candidate')){
     queue = fs.readFileSync('./candidate', "utf-8").split(/\n/);
-    visited = fs.readFileSync('./visited', "utf-8").split(/\n/);
     queue.pop();
-    visited.pop();
+
+    if(fs.existsSync('./visited')){
+      visited = fs.readFileSync('./visited', "utf-8").split(/\n/);
+      visited.pop();
+    }
 
     for(idx in visited)
       map.set(visited[idx], "");
 
-    fsGraph = fs.createWriteStream('./graph', {flags: 'a'});
+    if(fs.existsSync('./graph'))
+      fsGraph = fs.createWriteStream('./graph', {flags: 'a'});
+    else
+      fsGraph = fs.createWriteStream('./graph');
+
     console.log('Found history file, continue the process');
     console.log('visited: ' + visited);
     console.log('candidate: ' + queue);
