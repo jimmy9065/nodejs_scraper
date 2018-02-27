@@ -19,28 +19,46 @@ function timeout(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function writeGraph(fsGraph, key, data){
+  let temp = key + ":" + data.join(',');
+  let w_data = temp.slice(0, -1) + "\n";
+  console.log(w_data);
+  fsGraph.write(w_data, 'UTF8');
+}
+
 let crawling = async function(browser){
   let key;
-  let queue = [];
+  let queue = [], visited = [];
+  let fsGraph
   let map = new HashMap();
-  if(fs.existsSync('./candidate') && fs.existsSync('./graph')){
+  if(fs.existsSync('./candidate') && fs.existsSync('./graph') && fs.existsSync('./visited')){
     queue = fs.readFileSync('./candidate', "utf-8").split(/\n/);
+    visited = fs.readFileSync('./visited', "utf-8").split(/\n/);
     queue.pop();
-    console.log('found cadidate');
-    console.log(queue);
+    visited.pop();
+
+    for(idx in visited)
+      map.set(visited[idx], "");
+
+    fsGraph = fs.createWriteStream('./graph', {flags: 'a'});
+    console.log('Found history file, continue the process');
+    console.log('visited: ' + visited);
+    console.log('candidate: ' + queue);
   }
   else{
     key = '销售易';
-
     try{
-      queue = await scraper.query(browser, key);
+      res = await scraper.query(browser, key);
+      map.set(key, res);
+      visited.push(key);
+      fsGraph = fs.createWriteStream('./graph');
+      writeGraph(fsGraph, key, res);
+      queue = res;
     }
     catch(err) {
       console.log(err);
       return;
     }
-
-    map.set(key, queue);
   }
 
   if(fs.existsSync('./candidate')){
@@ -48,12 +66,18 @@ let crawling = async function(browser){
     fs.unlinkSync('./candidate');
   }
 
-  let fsGraph = fs.createWriteStream('./graph')
-  
+  if(fs.existsSync('./visited')){
+    console.log('delete visited file')
+    fs.unlinkSync('./visited');
+  }
+
+  console.log("start crawling")
   while(queue.length > 0 && running){
     await timeout(1000);
-    //key = queue.pop();
-    key = queue.shift();
+
+    //key = queue.pop(); //DFS
+    key = queue.shift(); //BFS
+
     if(!map.has(key)){
       try {
         let res = await scraper.query(browser, key);
@@ -75,6 +99,7 @@ let crawling = async function(browser){
           let trimm = data.slice(0, -1) + "\n";
           console.log(trimm)
           fsGraph.write(trimm, 'UTF8');
+          visited.push(key);
         }
       } 
       catch( error) {
@@ -86,6 +111,7 @@ let crawling = async function(browser){
     }
   }
 
+  console.log('candidate exhausted');
   fsGraph.end();
 
   if(queue.length > 0){
@@ -95,6 +121,16 @@ let crawling = async function(browser){
         console.log(err);
       else{
         console.log('candidate file recorded');
+
+        w_data = new Buffer(visited.join('\n'));
+        fs.writeFile('./visited', w_data, {flag: 'a'}, function(err) {
+          if(err)
+            console.log(err);
+          else{
+            console.log('visited file recorded');
+          }
+        });
+
         scraper.stopBrowser(browser);
       }
     })

@@ -64,18 +64,6 @@ query = async (browser, key) => {
         $ = cheerio.load(content, { decodeEntities: false });
       }
 
-      //await page.setViewport({width: 2000, height: 1080})
-      //await page.pdf({
-      //  path: key + '.pdf',
-      //  format: 'A4',
-      //  margin: {
-      //        top: "20px",
-      //        left: "0px",
-      //        right: "0px",
-      //        bottom: "20px"
-      //  }
-      //});
-
       preSelector += (i+1) + ')';
       selector = preSelector +
                  ' > div.c-row.c-gap-top > div > div:nth-child(2) > a, ' +
