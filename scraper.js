@@ -2,7 +2,13 @@ const puppeteer = require('puppeteer');
 const cheerio = require('cheerio');
 
 startBrowser = async () => {
-  return browser = await puppeteer.launch({args: ['--no-sandbox', '--disable-setuid-sandbox']});
+  try{
+    return browser = await puppeteer.launch({args: ['--no-sandbox', '--disable-setuid-sandbox']});
+  }
+  catch(err) {
+    console.log(err);
+    return undefined;
+  }
 }
 
 stopBrowser = async (browser) => {
@@ -12,32 +18,36 @@ stopBrowser = async (browser) => {
 query = async (browser, key) => {
   const page = await browser.newPage();
   try{
-    await page.setViewport({width: 2000, height: 1080})
+    await page.goto('http://www.baidu.com/s?wd=' + key, {
+                    waitUntil: 'networkidle2',
+                    timeout: 60000
+                   });
   }
-  catch (err) {
-    console.log("cant set the viewport");
+  catch(err){
+    console.log('can not open the page')
     console.log(err);
-    return [];
+    return undefined;
   }
 
+  let content;
   try{
-    console.log(key);
-    await page.goto('http://www.baidu.com/s?wd=' + key);
+    content = await page.content();
   }
-  catch (err) {
-    console.log('cant create page');
-    console.log(err);
-    return [];
+  catch(err){
+    console.log('cat not get the content');
+    console.log(err)
+    return undefined;
   }
 
-  let content = await page.content();
   let $ = cheerio.load(content, { decodeEntities: false });
   let selector = undefined;
   let preSelector = '#con-ar > div:nth-child(1) > div > div > div:nth-child(';
   let result = [];
 
-  if($('#con-ar') == undefined)
+  if($('#con-ar') == undefined){
+    page.close();
     return [];
+  }
 
   for(i=1; i<=5; i+=2){
     let temp = preSelector + i + ')';
@@ -50,17 +60,6 @@ query = async (browser, key) => {
         $ = cheerio.load(content, { decodeEntities: false });
       }
 
-      await page.pdf({
-        path: key + '.pdf',
-        format: 'A4',
-        margin: {
-              top: "20px",
-              left: "0px",
-              right: "0px",
-              bottom: "20px"
-        }
-      });
-
       preSelector += (i+1) + ')';
       selector = preSelector +
                  ' > div.c-row.c-gap-top > div > div:nth-child(2) > a, ' +
@@ -72,6 +71,7 @@ query = async (browser, key) => {
 
   if($(selector) == undefined){
     console.log('empty for ' + key)
+    page.close();
     return [];
   }
   
@@ -80,12 +80,7 @@ query = async (browser, key) => {
     result.push(newLabel);
   });
 
-  let output = key + ":";
-  for (let idx in result){
-    output += result[idx] + ",";
-  }
-  console.log(output)
-
+  page.close();
   return result;
 };
 

@@ -11,6 +11,7 @@
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",
     "hashmap": "^2.3.0",
+    "keypress": "^0.2.1",
     "puppeteer": "^1.1.0"
   }
 }
