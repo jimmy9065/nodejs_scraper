@@ -9,14 +9,26 @@ stopBrowser = async (browser) => {
   await browser.close();
 }
 
-function timeout(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 query = async (browser, key) => {
   const page = await browser.newPage();
-  await page.setViewport({width: 2000, height: 1080})
-  await page.goto('http://www.baidu.com/s?wd=' + key);
+  try{
+    await page.setViewport({width: 2000, height: 1080})
+  }
+  catch (err) {
+    console.log("cant set the viewport");
+    console.log(err);
+    return [];
+  }
+
+  try{
+    console.log(key);
+    await page.goto('http://www.baidu.com/s?wd=' + key);
+  }
+  catch (err) {
+    console.log('cant create page');
+    console.log(err);
+    return [];
+  }
 
   let content = await page.content();
   let $ = cheerio.load(content, { decodeEntities: false });
